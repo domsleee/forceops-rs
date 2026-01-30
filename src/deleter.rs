@@ -87,45 +87,54 @@ impl FileAndDirectoryDeleter {
     /// Delete a directory recursively with retry logic.
     pub fn delete_directory(&self, path: &Path) -> Result<()> {
         if is_symlink(path) {
-            // For symlinks, just remove the link itself
-            return self.delete_empty_directory(path);
+            // For symlinks, just remove the symlink itself (not its contents)
+            let _ = mark_as_not_readonly(path);
+            return fs::remove_dir(path).map_err(|e| anyhow!("{}", e));
         }
 
         // Try fast parallel deletion first
-        match fast_remove_dir_all(path) {
-            Ok(()) => Ok(()),
-            Err(_) if !path.exists() => Ok(()),
-            Err(_) => {
-                // Fast path failed, fall back to slow path with per-file retry logic
-                // This handles locked files/directories properly
-                if path.exists() {
-                    self.delete_directory_slow(path)
-                } else {
-                    Ok(())
-                }
-            }
+        if fast_remove_dir_all(path).is_ok() {
+            return Ok(());
         }
+
+        // Fast path failed - check if directory still exists
+        if !path.exists() {
+            return Ok(());
+        }
+
+        // Fall back to slow path with per-file retry logic
+        // This handles locked files/directories properly
+        self.delete_directory_with_retry(path)
     }
 
-    /// Slow path: delete directory contents one by one with retry logic for each.
-    fn delete_directory_slow(&self, path: &Path) -> Result<()> {
-        self.delete_files_in_folder(path)?;
-        self.delete_empty_directory(path)
-    }
-
-    /// Delete an empty directory with retry logic.
-    fn delete_empty_directory(&self, path: &Path) -> Result<()> {
+    /// Delete directory with full retry logic including process killing.
+    fn delete_directory_with_retry(&self, path: &Path) -> Result<()> {
         for attempt in 1..=self.config.max_retries + 1 {
-            // Try to remove read-only attribute
-            let _ = mark_as_not_readonly(path);
+            // Delete contents first (if not a symlink)
+            if !is_symlink(path)
+                && let Err(e) = self.delete_files_in_folder_once(path)
+            {
+                // If deleting contents fails, try to kill processes and retry
+                if attempt <= self.config.max_retries {
+                    let path_clone = path.to_path_buf();
+                    let get_processes = || -> Vec<ProcessInfo> {
+                        lock_checker::get_locking_processes_low_level(&path_clone)
+                            .unwrap_or_default()
+                    };
+                    self.kill_processes_and_log_info(true, attempt, path, get_processes);
+                    continue;
+                }
+                return Err(e);
+            }
 
+            // Try to remove the directory itself
+            let _ = mark_as_not_readonly(path);
             match fs::remove_dir(path) {
                 Ok(()) => return Ok(()),
-                Err(_e) if !path.exists() => return Ok(()), // Directory was deleted by something else
+                Err(_) if !path.exists() => return Ok(()),
                 Err(e) if is_io_error(&e) => {
                     let path_clone = path.to_path_buf();
                     let get_processes = || -> Vec<ProcessInfo> {
-                        // For directories, use the low-level API (NtQuerySystemInformation)
                         lock_checker::get_locking_processes_low_level(&path_clone)
                             .unwrap_or_default()
                     };
@@ -145,17 +154,30 @@ impl FileAndDirectoryDeleter {
         ))
     }
 
-    fn delete_files_in_folder(&self, directory: &Path) -> Result<()> {
-        let entries = fs::read_dir(directory)?;
+    /// Try to delete files in folder once, without retrying individual files.
+    fn delete_files_in_folder_once(&self, directory: &Path) -> Result<()> {
+        let entries = match fs::read_dir(directory) {
+            Ok(e) => e,
+            Err(_) if !directory.exists() => return Ok(()),
+            Err(e) => return Err(anyhow!("{}", e)),
+        };
 
         for entry in entries {
             let entry = entry?;
             let path = entry.path();
 
             if path.is_file() {
-                self.delete_file(&path)?;
+                // Try fast delete, ignore errors (will retry at directory level)
+                let _ = mark_as_not_readonly(&path);
+                if let Err(e) = fs::remove_file(&path)
+                    && path.exists()
+                    && is_io_or_permission_error(&e)
+                {
+                    return Err(anyhow!("{}", e));
+                }
             } else if path.is_dir() {
-                self.delete_directory(&path)?;
+                // Recursively try to delete subdirectory
+                self.delete_directory_with_retry(&path)?;
             }
         }
 
