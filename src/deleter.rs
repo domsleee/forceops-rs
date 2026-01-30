@@ -11,6 +11,9 @@ use std::thread;
 use std::time::Duration;
 use tracing::{info, warn};
 
+// Use parallel remove_dir_all for fast directory deletion
+use remove_dir_all::remove_dir_all as fast_remove_dir_all;
+
 /// Handles deletion of files and directories with retry logic and process killing.
 pub struct FileAndDirectoryDeleter {
     config: ForceOpsConfig,
@@ -83,11 +86,32 @@ impl FileAndDirectoryDeleter {
 
     /// Delete a directory recursively with retry logic.
     pub fn delete_directory(&self, path: &Path) -> Result<()> {
-        // If it's not a symlink, delete contents first
+        // Fast path: try to delete the entire directory tree at once using parallel deletion
+        // This is much faster when there are no locks
         if !is_symlink(path) {
-            self.delete_files_in_folder(path)?;
+            if fast_remove_dir_all(path).is_err() {
+                // Fall back to slow path with per-file retry logic
+                if path.exists() {
+                    self.delete_directory_slow(path)?;
+                    return Ok(());
+                }
+            } else {
+                return Ok(());
+            }
         }
 
+        // For symlinks, just remove the link itself
+        self.delete_empty_directory(path)
+    }
+
+    /// Slow path: delete directory contents one by one with retry logic for each.
+    fn delete_directory_slow(&self, path: &Path) -> Result<()> {
+        self.delete_files_in_folder(path)?;
+        self.delete_empty_directory(path)
+    }
+
+    /// Delete an empty directory with retry logic.
+    fn delete_empty_directory(&self, path: &Path) -> Result<()> {
         for attempt in 1..=self.config.max_retries + 1 {
             // Try to remove read-only attribute
             let _ = mark_as_not_readonly(path);

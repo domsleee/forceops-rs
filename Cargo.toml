@@ -27,6 +27,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1"
 thiserror = "2"
+remove_dir_all = { version = "1.0.0", features = ["parallel"] }
 
 [dev-dependencies]
 mockall = "0.14"
@@ -37,3 +38,4 @@ uuid = { version = "1", features = ["v4"] }
 lto = true
 codegen-units = 1
 strip = true
+panic = "abort"

@@ -116,8 +116,9 @@ Options:
 fops is a native Rust binary that:
 - Starts instantly (no runtime initialization)
 - Uses direct Windows API calls via [windows-rs](https://github.com/microsoft/windows-rs)
+- Parallel directory deletion via [remove_dir_all](https://github.com/XAMPPRocky/remove_dir_all)
 - Compiles with LTO for optimal performance
-- Produces a small, self-contained executable (~1.6 MB)
+- Produces a small, self-contained executable (~1.2 MB)
 
 ## Comparison with forceops (C#)
 
@@ -127,17 +128,19 @@ Benchmarks run on Windows 11 with both tools warm (cached):
 
 | Test Case                    | fops (Rust) | forceops (C#) | Speedup |
 |------------------------------|-------------|---------------|---------|
-| Startup time (`--version`)   | ~15 ms      | ~29 ms        | **1.9x faster** |
-| Delete dir (100 files)       | ~16 ms      | ~30 ms        | **1.9x faster** |
-| Delete dir (500 files)       | ~19 ms      | ~30 ms        | **1.6x faster** |
+| Startup time (`--version`)   | ~14 ms      | ~26 ms        | **1.9x faster** |
+| Delete dir (100 files)       | ~14 ms      | ~27 ms        | **1.9x faster** |
+| Delete dir (500 files)       | ~15 ms      | ~28 ms        | **1.9x faster** |
+| Delete dir (3231 files, 2.6GB) | ~361 ms   | ~777 ms       | **2.2x faster** |
 
 ### Features
 
 | Feature | fops (Rust) | forceops (C#) |
 |---------|-------------|---------------|
-| Binary size | ~1.6 MB | ~15 MB (Native AOT) |
+| Binary size | ~1.2 MB | ~15 MB (Native AOT) |
 | Dependencies | None | .NET runtime or Native AOT |
 | Lock detection | Direct Windows API | LockCheck library |
+| Directory deletion | Parallel | Sequential |
 
 ## Related
 
