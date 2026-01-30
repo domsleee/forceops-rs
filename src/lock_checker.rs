@@ -81,10 +81,10 @@ pub fn get_locking_processes(paths: &[&Path]) -> Result<Vec<ProcessInfo>, LockCh
         let mut session_handle: u32 = 0;
         let mut session_key = [0u16; CCH_RM_SESSION_KEY as usize + 1];
 
-        let result = RmStartSession(&mut session_handle, 0, PWSTR(session_key.as_mut_ptr()));
+        let result = RmStartSession(&mut session_handle, None, PWSTR(session_key.as_mut_ptr()));
         if result.0 != 0 {
             return Err(LockCheckError::SessionStart(
-                windows::core::Error::from_win32(),
+                windows::core::Error::from_thread(),
             ));
         }
 
@@ -107,7 +107,7 @@ pub fn get_locking_processes(paths: &[&Path]) -> Result<Vec<ProcessInfo>, LockCh
         let result = RmRegisterResources(session_handle, Some(&path_ptrs), None, None);
         if result.0 != 0 {
             return Err(LockCheckError::RegisterResources(
-                windows::core::Error::from_win32(),
+                windows::core::Error::from_thread(),
             ));
         }
 
