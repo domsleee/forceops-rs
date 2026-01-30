@@ -18,6 +18,7 @@ pub fn is_symlink(path: &Path) -> bool {
 }
 
 /// Removes the read-only attribute from a file or directory if it's set.
+#[allow(clippy::permissions_set_readonly_false)]
 pub fn mark_as_not_readonly(path: &Path) -> std::io::Result<()> {
     let metadata = fs::metadata(path)?;
     let mut permissions = metadata.permissions();

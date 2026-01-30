@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 pub mod test_context;
 pub mod test_util;
 pub mod test_util_stdout;

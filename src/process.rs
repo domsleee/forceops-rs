@@ -37,8 +37,8 @@ fn kill_process(pid: u32) -> Result<(), String> {
         let result = TerminateProcess(handle, 1);
         let _ = CloseHandle(handle);
 
-        if result.is_err() {
-            return Err(result.unwrap_err().to_string());
+        if let Err(e) = result {
+            return Err(e.to_string());
         }
 
         Ok(())

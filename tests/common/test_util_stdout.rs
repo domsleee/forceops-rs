@@ -1,6 +1,5 @@
 //! Stdout capture utilities for tests
 
-use std::io::Write;
 use std::sync::{Arc, Mutex};
 
 /// Captured stdout content

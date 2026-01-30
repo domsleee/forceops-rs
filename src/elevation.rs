@@ -3,11 +3,11 @@
 //! Provides functionality to check if the current process is elevated (running as admin)
 //! and to relaunch the process with elevated privileges.
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use std::ffi::OsStr;
 use std::io::{BufRead, BufReader};
 use std::os::windows::ffi::OsStrExt;
-use std::path::PathBuf;
+use std::path::Path;
 use std::ptr;
 use tracing::info;
 use windows::Win32::Foundation::{CloseHandle, HANDLE, WAIT_OBJECT_0};
@@ -92,7 +92,7 @@ fn is_permission_error(error: &anyhow::Error) -> bool {
 }
 
 /// Relaunches the current executable with elevated privileges.
-fn relaunch_as_elevated(args: &[String], output_file: &PathBuf) -> Result<u32> {
+fn relaunch_as_elevated(args: &[String], output_file: &Path) -> Result<u32> {
     let exe_path = std::env::current_exe()?;
 
     // Build command line: skip first arg (exe name), add output redirection

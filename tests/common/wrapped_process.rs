@@ -1,6 +1,6 @@
 //! Wrapped process that gets killed on drop (RAII pattern)
 
-use std::process::{Child, Command, Stdio};
+use std::process::Child;
 
 /// A wrapper around a process that kills it when dropped
 pub struct WrappedProcess {

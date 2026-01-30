@@ -1,0 +1,63 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+name: continuous-integration
+
+jobs:
+  fmt:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain and cache
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
+
+  clippy:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain and cache
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: cargo clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+  tests:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain and cache
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: cargo test
+        run: cargo test
+
+  build-release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain and cache
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: cargo build --release
+        run: cargo build --release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: forceops-windows
+          path: target/release/forceops.exe
