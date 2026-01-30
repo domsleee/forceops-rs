@@ -86,22 +86,49 @@ impl FileAndDirectoryDeleter {
 
     /// Delete a directory recursively with retry logic.
     pub fn delete_directory(&self, path: &Path) -> Result<()> {
-        // Fast path: try to delete the entire directory tree at once using parallel deletion
-        // This is much faster when there are no locks
-        if !is_symlink(path) {
-            if fast_remove_dir_all(path).is_err() {
-                // Fall back to slow path with per-file retry logic
-                if path.exists() {
-                    self.delete_directory_slow(path)?;
-                    return Ok(());
+        if is_symlink(path) {
+            // For symlinks, just remove the link itself
+            return self.delete_empty_directory(path);
+        }
+
+        // Try fast parallel deletion first, with retry logic for locked directories
+        for attempt in 1..=self.config.max_retries + 1 {
+            match fast_remove_dir_all(path) {
+                Ok(()) => return Ok(()),
+                Err(_) if !path.exists() => return Ok(()),
+                Err(e) => {
+                    // Check if it's a sharing violation (locked file/directory)
+                    let is_lock_error = e
+                        .raw_os_error()
+                        .is_some_and(|code| code == 32 || code == 33);
+
+                    if is_lock_error {
+                        let path_clone = path.to_path_buf();
+                        let get_processes = || -> Vec<ProcessInfo> {
+                            lock_checker::get_locking_processes_low_level(&path_clone)
+                                .unwrap_or_default()
+                        };
+
+                        if self.kill_processes_and_log_info(true, attempt, path, get_processes) {
+                            return Err(anyhow!("{}", e));
+                        }
+                        // Continue to next retry attempt
+                    } else {
+                        // Non-lock error, fall back to slow path for detailed errors
+                        if path.exists() {
+                            return self.delete_directory_slow(path);
+                        }
+                        return Err(anyhow!("{}", e));
+                    }
                 }
-            } else {
-                return Ok(());
             }
         }
 
-        // For symlinks, just remove the link itself
-        self.delete_empty_directory(path)
+        Err(anyhow!(
+            "Failed to delete directory '{}' after {} retries",
+            path.display(),
+            self.config.max_retries
+        ))
     }
 
     /// Slow path: delete directory contents one by one with retry logic for each.
