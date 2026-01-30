@@ -1,11 +1,11 @@
 use anyhow::Result;
 use clap::Parser;
-use forceops::cli::{Cli, Commands};
-use forceops::config::ForceOpsConfig;
-use forceops::deleter::FileAndDirectoryDeleter;
-use forceops::elevation;
-use forceops::lock_checker;
-use forceops::utils;
+use fops::cli::{Cli, Commands};
+use fops::config::ForceOpsConfig;
+use fops::deleter::FileAndDirectoryDeleter;
+use fops::elevation;
+use fops::lock_checker;
+use fops::utils;
 use std::process::ExitCode;
 use tracing::error;
 

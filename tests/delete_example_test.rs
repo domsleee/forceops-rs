@@ -11,7 +11,7 @@ fn get_forceops_exe() -> PathBuf {
     let mut path = std::env::current_exe().unwrap();
     path.pop(); // Remove test executable name
     path.pop(); // Remove deps
-    path.push("forceops.exe");
+    path.push("fops.exe");
     path
 }
 

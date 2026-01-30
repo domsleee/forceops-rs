@@ -3,7 +3,7 @@
 //! Provides functionality to check if the current process is elevated (running as admin)
 //! and to relaunch the process with elevated privileges.
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use std::ffi::OsStr;
 use std::io::{BufRead, BufReader};
 use std::os::windows::ffi::OsStrExt;

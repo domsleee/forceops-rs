@@ -7,7 +7,7 @@ use common::test_util::{
     create_temporary_directory, get_temporary_file_name, hold_lock_on_file_using_powershell,
     launch_process_in_directory,
 };
-use forceops::lock_checker;
+use fops::lock_checker;
 
 #[test]
 fn works_for_directory() {

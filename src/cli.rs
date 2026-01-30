@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(
-    name = "forceops",
+    name = "fops",
     version,
     about = "By hook or by crook, perform operations on files and directories. If they are in use by a process, kill the process."
 )]

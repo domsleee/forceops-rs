@@ -7,8 +7,8 @@ use common::test_util::{
     create_temporary_directory, get_temporary_file_name, hold_lock_on_file_using_powershell,
     launch_process_in_directory,
 };
-use forceops::config::ForceOpsConfig;
-use forceops::deleter::FileAndDirectoryDeleter;
+use fops::config::ForceOpsConfig;
+use fops::deleter::FileAndDirectoryDeleter;
 use std::fs;
 
 #[test]

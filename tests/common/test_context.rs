@@ -1,6 +1,6 @@
 //! Test context with mock implementations
 
-use forceops::config::ForceOpsConfig;
+use fops::config::ForceOpsConfig;
 use std::sync::{Arc, Mutex};
 
 /// Fake logger that captures log messages for testing
