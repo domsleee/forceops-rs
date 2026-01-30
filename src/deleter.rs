@@ -91,44 +91,20 @@ impl FileAndDirectoryDeleter {
             return self.delete_empty_directory(path);
         }
 
-        // Try fast parallel deletion first, with retry logic for locked directories
-        for attempt in 1..=self.config.max_retries + 1 {
-            match fast_remove_dir_all(path) {
-                Ok(()) => return Ok(()),
-                Err(_) if !path.exists() => return Ok(()),
-                Err(e) => {
-                    // Check if it's a sharing violation (locked file/directory)
-                    let is_lock_error = e
-                        .raw_os_error()
-                        .is_some_and(|code| code == 32 || code == 33);
-
-                    if is_lock_error {
-                        let path_clone = path.to_path_buf();
-                        let get_processes = || -> Vec<ProcessInfo> {
-                            lock_checker::get_locking_processes_low_level(&path_clone)
-                                .unwrap_or_default()
-                        };
-
-                        if self.kill_processes_and_log_info(true, attempt, path, get_processes) {
-                            return Err(anyhow!("{}", e));
-                        }
-                        // Continue to next retry attempt
-                    } else {
-                        // Non-lock error, fall back to slow path for detailed errors
-                        if path.exists() {
-                            return self.delete_directory_slow(path);
-                        }
-                        return Err(anyhow!("{}", e));
-                    }
+        // Try fast parallel deletion first
+        match fast_remove_dir_all(path) {
+            Ok(()) => Ok(()),
+            Err(_) if !path.exists() => Ok(()),
+            Err(_) => {
+                // Fast path failed, fall back to slow path with per-file retry logic
+                // This handles locked files/directories properly
+                if path.exists() {
+                    self.delete_directory_slow(path)
+                } else {
+                    Ok(())
                 }
             }
         }
-
-        Err(anyhow!(
-            "Failed to delete directory '{}' after {} retries",
-            path.display(),
-            self.config.max_retries
-        ))
     }
 
     /// Slow path: delete directory contents one by one with retry logic for each.
