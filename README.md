@@ -121,9 +121,20 @@ fops is a native Rust binary that:
 
 ## Comparison with forceops (C#)
 
+### Performance
+
+Benchmarks run on Windows 11 with both tools warm (cached):
+
+| Test Case                    | fops (Rust) | forceops (C#) | Speedup |
+|------------------------------|-------------|---------------|---------|
+| Startup time (`--version`)   | ~15 ms      | ~29 ms        | **1.9x faster** |
+| Delete dir (100 files)       | ~16 ms      | ~30 ms        | **1.9x faster** |
+| Delete dir (500 files)       | ~19 ms      | ~30 ms        | **1.6x faster** |
+
+### Features
+
 | Feature | fops (Rust) | forceops (C#) |
 |---------|-------------|---------------|
-| Startup time | ~5ms | ~50ms (Native AOT) |
 | Binary size | ~1.6 MB | ~15 MB (Native AOT) |
 | Dependencies | None | .NET runtime or Native AOT |
 | Lock detection | Direct Windows API | LockCheck library |
