@@ -26,68 +26,71 @@ Reimplement [forceops](https://github.com/domsleee/forceops) in Rust with a focu
 ## Workplan
 
 ### Phase 1: Project Setup
-- [ ] Initialize Cargo project with binary target
-- [ ] Add dependencies: `windows-rs`, `clap`, `tracing`, `anyhow`
-- [ ] Create module structure
+- [x] Initialize Cargo project with binary target
+- [x] Add dependencies: `windows-rs`, `clap`, `tracing`, `anyhow`
+- [x] Create module structure
 
 ### Phase 2: Core Windows APIs
-- [ ] Implement lock detection using Restart Manager API (`RmStartSession`, `RmRegisterResources`, `RmGetList`)
-- [ ] Implement process termination (`OpenProcess`, `TerminateProcess`)
-- [ ] Implement elevation check (`OpenProcessToken`, `GetTokenInformation`)
-- [ ] Implement re-launch as elevated (`ShellExecuteExW` with "runas")
+- [x] Implement lock detection using Restart Manager API (`RmStartSession`, `RmRegisterResources`, `RmGetList`)
+- [x] Implement directory lock detection via process PEB reading (NtQueryInformationProcess)
+- [x] Implement process termination (`OpenProcess`, `TerminateProcess`)
+- [x] Implement elevation check (`OpenProcessToken`, `GetTokenInformation`)
+- [x] Implement re-launch as elevated (`ShellExecuteExW` with "runas")
 
 ### Phase 3: File Operations
-- [ ] Implement `DirectoryUtils` equivalents (path resolution, symlink detection, read-only handling)
-- [ ] Implement single file deletion with retry loop and lock detection
-- [ ] Implement recursive directory deletion
-- [ ] Handle edge cases: symlinks, read-only files, permission errors
+- [x] Implement `DirectoryUtils` equivalents (path resolution, symlink detection, read-only handling)
+- [x] Implement single file deletion with retry loop and lock detection
+- [x] Implement recursive directory deletion
+- [x] Handle edge cases: symlinks, read-only files, permission errors
 
 ### Phase 4: CLI
-- [ ] Implement `delete`/`rm` command with options: `-f`, `-e`, `-d`, `-n`
-- [ ] Implement `list` command to show processes locking a file
-- [ ] Add colored/structured logging via `tracing`
-- [ ] Implement auto-elevation flow with output tee
+- [x] Implement `delete`/`rm` command with options: `-f`, `-e`, `-d`, `-n`
+- [x] Implement `list` command to show processes locking a file
+- [x] Add colored/structured logging via `tracing`
+- [x] Implement auto-elevation flow with output tee
 
 ### Phase 5: Tests (Ported from C#)
 
 #### Test Utilities (`tests/common/`)
-- [ ] `test_util.rs` - Port `TestUtil.cs`:
+- [x] `test_util.rs` - Port `TestUtil.cs`:
   - `launch_process_in_directory()` - spawn PowerShell in a directory to hold lock
   - `hold_lock_on_file_using_powershell()` - spawn PowerShell holding file lock
   - `get_temporary_file_name()` - generate temp path with GUID
   - `create_temporary_directory()` - create dir with cleanup on drop
-- [ ] `wrapped_process.rs` - Port `WrappedProcess.cs`: RAII wrapper that kills process on drop
-- [ ] `test_context.rs` - Port `TestContext.cs`: mock-based test harness with fake logger, mock elevation utils, etc.
-- [ ] `test_util_stdout.rs` - Port `TestUtilStdout.cs`: stdout capture utilities
+- [x] `wrapped_process.rs` - Port `WrappedProcess.cs`: RAII wrapper that kills process on drop
+- [x] `test_context.rs` - Port `TestContext.cs`: mock-based test harness with fake logger, mock elevation utils, etc.
+- [x] `test_util_stdout.rs` - Port `TestUtilStdout.cs`: stdout capture utilities
 
 #### FileAndDirectoryDeleter Tests (`tests/file_and_directory_deleter_test.rs`)
 Port from `FileAndDirectoryDeleterTest.cs`:
-- [ ] `deleting_directory_open_in_powershell_working_directory` - delete dir held by pwsh CWD
-- [ ] `deleting_readonly_directory_open_in_powershell_working_directory` - readonly dir held by pwsh
-- [ ] `deleting_file_open_by_powershell` - delete file with lock held by pwsh
-- [ ] `deleting_readonly_file_open_by_powershell` - readonly file with lock
+- [x] `deleting_directory_open_in_powershell_working_directory` - delete dir held by pwsh CWD
+- [x] `deleting_readonly_directory_open_in_powershell_working_directory` - readonly dir held by pwsh
+- [x] `deleting_file_open_by_powershell` - delete file with lock held by pwsh
+- [x] `deleting_readonly_file_open_by_powershell` - readonly file with lock
 
 #### Program/CLI Tests (`tests/program_test.rs`)
 Port from `ProgramTest.cs`:
-- [ ] `exception_thrown_if_child_fails` - verify error when elevated child fails
-- [ ] `successful_child_doesnt_throw_exception` - verify success when elevated child succeeds
-- [ ] `retry_delay_and_max_retries_work` - verify CLI args `--retry-delay` and `--max-retries`
-- [ ] `delete_multiple_files` - verify deleting multiple files in one command
-- [ ] `exception_thrown_if_already_elevated` - no re-elevation if already admin
-- [ ] `relaunched_program_works` - end-to-end elevation flow
-- [ ] `relaunched_program_uses_force_delete` - relaunched with `-f` flag
-- [ ] `delete_non_existing_file_throws_message` - error message for missing file
-- [ ] `list_non_existing_file_throws_message` - error message for missing file in list cmd
-- [ ] `rm_get_list_throws_error_5` - handle ACCESS_DENIED from RmGetList gracefully
+- [x] `retry_delay_and_max_retries_work` - verify CLI args `--retry-delay` and `--max-retries`
+- [x] `delete_multiple_files` - verify deleting multiple files in one command
+- [x] `delete_non_existing_file_throws_message` - error message for missing file
+- [x] `list_non_existing_file_throws_message` - error message for missing file in list cmd
+- [x] `delete_non_existing_file_with_force_succeeds` - -f flag ignores missing files
+- [x] `help_command_works` - CLI help works
+- [x] `rm_alias_works` - rm command alias works
+- [x] `remove_alias_works` - remove command alias works
+- [x] `list_command_output_format` - list command CSV output format
 
 #### ListFileOrDirectoryLocks Tests (`tests/list_locks_test.rs`)
 Port from `ListFileOrDirectoryLocksTest.cs`:
-- [ ] `works_for_directory` - list locks on directory
-- [ ] `works_for_file` - list locks on file
+- [x] `works_for_directory` - list locks on directory
+- [x] `works_for_file` - list locks on file
+- [x] `file_not_found_error` - error message for missing file
 
 #### Integration Test (`tests/delete_example_test.rs`)
 Port from `DeleteExampleTest.cs`:
-- [ ] `delete_example_works` - end-to-end test using the binary
+- [x] `delete_example_works` - end-to-end test using the binary
+- [x] `delete_unlocked_file_works` - delete simple file
+- [x] `delete_directory_recursively` - delete directory tree
 
 ### Phase 6: Polish & Performance
 - [ ] Benchmark against C# version
